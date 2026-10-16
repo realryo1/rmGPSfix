@@ -10,7 +10,7 @@ module_prop = """id=rm11pro_gps_fix
 name=RedMagic 11 Pro (NX809J) EvolutionX GPS Fix
 version=v1.0
 versionCode=1
-author=Antigravity
+author=realryo1
 description=Fixes xtra-daemon duplicate spawn and SELinux netd socket denial on EvolutionX for RedMagic 11 Pro (NX809J).
 """
 

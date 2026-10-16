@@ -58,7 +58,7 @@
   - これにより GPSTest 上で衛星リスト（アルマナック・可視衛星計算結果）とマップ上の位置が表示されるようになった。
 - **`xtra-daemon` 二重起動防止と `xtra.sqlite` リトライ上限リセットの適用・検証 (`prepare_step1.py`, `apply_step1.sh`, `logcat_step1_v3.txt`, `dumpsys_location_step1_v2.txt`)**:
   - `device_etc/izat_fixed.conf`（`PROCESS_NAME=xtra-daemon` の `PROCESS_STATE` を `DISABLED` に変更）を作成し、実機の `/vendor/etc/izat.conf` へ一時的に bind mount を実施。
-  - `/data/vendor/location/xtra/xtra.sqlite` を备份（`.bak`）した上でリトライ回数カウンタを `0` にリセットし、`xtra-daemon` / `loc_launcher` / `gnss_service` を再起動。
+  - `/data/vendor/location/xtra/xtra.sqlite` をバックアップ（`.bak`）した上でリトライ回数カウンタを `0` にリセットし、`xtra-daemon` / `loc_launcher` / `gnss_service` を再起動。
   - **結果**:
     1. `ps -efZ` にて、`loc_launcher` による非正規ドメイン（`u:r:vendor_location:s0`）の2つ目の `xtra-daemon` が起動しなくなり、`init` からの正規ドメイン（`u:r:vendor_location_xtra_daemon:s0`）の `xtra-daemon` 1プロセスのみが単独稼働することを確認。
     2. `netd` における `tcp_socket { read write }` の SELinux 拒否（`android_setsocknetwork failure`）が完全に消滅。
@@ -85,3 +85,12 @@
 - **GitHubパブリック公開対応とローカルコミット作成**:
   - `.gitignore` を作成し、位置座標等の個人情報を含む `logs/`、抽出データ `archive/`、大容量ROMイメージ（`1_stock20images/`, `EvolutionX-*/`）をGit管理対象から除外。
   - 原因解説と導入手順をまとめた `README.md`（日本語）および `README_en.md`（英語）を作成し、`git init` およびローカルコミットを作成。
+
+## マイルストーン6: 公開前の最終整備 (2026-10-16)
+- **公開前の検証**: 追跡ファイル・コミット履歴を全件確認。公開対象に実際の位置座標、ユーザー固有のパス、シリアル・IMEI・MAC・IP 等は含まれないことを確認。
+- **生ログの移動**: 実機の生ログ（`Location[fused|network ...]` 等の測位座標を含む）を `logs/` からリポジトリの外（`../rmGPSfix_logs/`）へ移動。`.gitignore` の除外設定は保険として残す。
+- **モジュール情報の修正**: `module.prop` の `author` を `Antigravity` から `realryo1` に変更し、`scripts/build_ksu_module.py` で `module/` と ZIP を再生成。
+- **ライセンス**: MIT License の `LICENSE` を追加。`module/izat.conf` は ROM 由来のため、原本の権利に関する注記を README に追加。
+- **README の整備**: 検証環境（KernelSU のみ検証済み）、ROM イメージを含まないことによる再現手順、ライセンスの注記を日英両方に追記。Magisk / APatch の記述は未検証のため削除。
+- **誤字修正**: 本ファイル内の「备份」を「バックアップ」に修正。
+- **据え置き**: コミット作者のメールアドレスは変更せず保持。リモートはユーザーが設定予定。

@@ -2,7 +2,7 @@
 
 [English (README_en.md)](./README_en.md)
 
-RedMagic 11 Pro (`NX809J` / Snapdragon 8 Elite Gen 2 `SM8850` `canoe`) のカスタムROM（EvolutionX 等）において、GPS / GNSS 測位が機能しない問題を修正する KernelSU / Magisk モジュールおよび解析スクリプト一式です。
+RedMagic 11 Pro (`NX809J` / Snapdragon 8 Elite Gen 2 `SM8850` `canoe`) のカスタムROM（EvolutionX 等）において、GPS / GNSS 測位が機能しない問題を修正する KernelSU モジュールおよび解析スクリプト一式です。
 
 ---
 
@@ -36,10 +36,20 @@ Stock ROM（RedMagic OS B20）とカスタムROM（EvolutionX）のパーティ�
 
 ---
 
+## 検証環境
+
+| 項目 | 内容 |
+|---|---|
+| 端末 | RedMagic 11 Pro（`NX809J`） |
+| ROM | EvolutionX（`A17` / 2026-10-10 ビルド、MinimalGApps） |
+| ルート環境 | KernelSU（検証済み）。Magisk / APatch は未検証 |
+
+---
+
 ## 導入手順
 
 1. **モジュールのインストール**
-   - KernelSU（または Magisk / APatch）マネージャーから [`rm11pro_gps_fix_v1.0.zip`](./rm11pro_gps_fix_v1.0.zip) をインストールし、端末を再起動します。
+   - KernelSU マネージャーから [`rm11pro_gps_fix_v1.0.zip`](./rm11pro_gps_fix_v1.0.zip) をインストールし、端末を再起動します。
 2. **「Google 位置情報の精度」の有効化**
    - 端末の **「設定」 ＞ 「位置情報」 ＞ 「位置情報サービス」 ＞ 「Google 位置情報の精度」** を開いて **ON（有効）** にします。
 3. **動作確認**
@@ -60,3 +70,21 @@ Stock ROM（RedMagic OS B20）とカスタムROM（EvolutionX）のパーティ�
   - `diff_super.py` / `compare_details.py`: Stock ROM とカスタムROMの全パーティション差分抽出スクリプト
   - `inspect_super.py` / `inspect_evox_super.py`: Raw / Sparse `super.img` のパーティション構造確認スクリプト
 - `sagyou.md`: 調査・検証・実装のマイルストーン作業記録
+
+---
+
+## スクリプトの再現手順
+
+`scripts/` の解析スクリプトは、リポジトリに含まれない ROM イメージを前提としています。
+
+- `1_stock20images/super.img`: Stock ROM（RedMagic OS）の `super.img`
+- `EvolutionX-NX809J-A17-20261010-MinimalGApps/super.img`: カスタムROM の `super.img`
+
+ROM イメージは各自の端末から用意してください。`build_ksu_module.py` は ROM イメージを必要とせず、`module/` から ZIP を生成できます。
+
+---
+
+## ライセンス
+
+- リポジトリ内のスクリプト・ドキュメント・モジュールスクリプトは [MIT License](./LICENSE) です。
+- `module/izat.conf` は EvolutionX / Qualcomm 由来の設定ファイルを改変したものです。原本の権利は原著作者に帰属するため、再配布の可否は各自でご確認ください。

@@ -2,7 +2,7 @@
 
 [日本語 (README.md)](./README.md)
 
-A KernelSU / Magisk / APatch module and analysis toolkit that fixes non-functional GPS / GNSS positioning on custom ROMs (such as EvolutionX) for the RedMagic 11 Pro (`NX809J` / Snapdragon 8 Elite Gen 2 `SM8850` `canoe`).
+A KernelSU module and analysis toolkit that fixes non-functional GPS / GNSS positioning on custom ROMs (such as EvolutionX) for the RedMagic 11 Pro (`NX809J` / Snapdragon 8 Elite Gen 2 `SM8850` `canoe`).
 
 ---
 
@@ -36,10 +36,20 @@ The included module (`module/` and `rm11pro_gps_fix_v1.0.zip`) applies the follo
 
 ---
 
+## Verified Environment
+
+| Item | Details |
+|---|---|
+| Device | RedMagic 11 Pro (`NX809J`) |
+| ROM | EvolutionX (`A17` / build 2026-10-10, MinimalGApps) |
+| Root | KernelSU (verified). Magisk / APatch are not verified |
+
+---
+
 ## Installation Instructions
 
 1. **Install the Module**
-   - Flash [`rm11pro_gps_fix_v1.0.zip`](./rm11pro_gps_fix_v1.0.zip) in your KernelSU (or Magisk / APatch) manager app and reboot your device.
+   - Flash [`rm11pro_gps_fix_v1.0.zip`](./rm11pro_gps_fix_v1.0.zip) in your KernelSU manager app and reboot your device.
 2. **Enable Google Location Accuracy**
    - On your device, go to **Settings > Location > Location services > Google Location Accuracy** and turn it **ON**.
 3. **Verify Positioning**
@@ -60,3 +70,21 @@ The included module (`module/` and `rm11pro_gps_fix_v1.0.zip`) applies the follo
   - `diff_super.py` / `compare_details.py`: Scripts to diff all partitions between Stock ROM and Custom ROM
   - `inspect_super.py` / `inspect_evox_super.py`: Scripts to inspect Raw / Sparse `super.img` partition tables
 - `sagyou.md`: Detailed investigation and verification log (in Japanese)
+
+---
+
+## Reproducing the Scripts
+
+The analysis scripts in `scripts/` expect ROM images that are not included in this repository:
+
+- `1_stock20images/super.img`: Stock ROM (RedMagic OS) `super.img`
+- `EvolutionX-NX809J-A17-20261010-MinimalGApps/super.img`: Custom ROM `super.img`
+
+Please extract these from your own device. `build_ksu_module.py` does not need any ROM image; it generates the ZIP from `module/` alone.
+
+---
+
+## License
+
+- The scripts, documentation, and module scripts in this repository are released under the [MIT License](./LICENSE).
+- `module/izat.conf` is a modified configuration file derived from EvolutionX / Qualcomm. The original rights belong to their respective authors; please check whether redistribution is permitted for you.
