@@ -1,5 +1,7 @@
 # RedMagic 11 Pro (NX809J) EvolutionX GPS Fix
 
+[English (README_en.md)](./README_en.md)
+
 RedMagic 11 Pro (`NX809J` / Snapdragon 8 Elite Gen 2 `SM8850` `canoe`) のカスタムROM（EvolutionX 等）において、GPS / GNSS 測位が機能しない問題を修正する KernelSU / Magisk モジュールおよび解析スクリプト一式です。
 
 ---

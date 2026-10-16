@@ -84,4 +84,4 @@
   - `archive/`: 検証用一時スクリプトおよび実機・Stockからの抽出ファイル（`device_etc/`, `stock_extracted/` 等）を移動して保持。
 - **GitHubパブリック公開対応とローカルコミット作成**:
   - `.gitignore` を作成し、位置座標等の個人情報を含む `logs/`、抽出データ `archive/`、大容量ROMイメージ（`1_stock20images/`, `EvolutionX-*/`）をGit管理対象から除外。
-  - 原因解説と導入手順をまとめた `README.md` を作成し、`git init` および初期ローカルコミットを作成。
+  - 原因解説と導入手順をまとめた `README.md`（日本語）および `README_en.md`（英語）を作成し、`git init` およびローカルコミットを作成。
