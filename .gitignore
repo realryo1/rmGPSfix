@@ -1,0 +1,15 @@
+# ROM images (large proprietary files)
+1_stock20images/
+EvolutionX-*/
+*.img
+
+# Raw device logs & diagnostics (contain location coordinates / device identifiers)
+logs/
+
+# Local extracted files & temporary scripts
+archive/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class

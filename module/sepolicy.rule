@@ -1,0 +1,2 @@
+allow netd vendor_location tcp_socket { read write getopt setopt }
+allow netd vendor_location udp_socket { read write getopt setopt }
