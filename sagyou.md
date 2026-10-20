@@ -114,3 +114,20 @@
 - **その他のログ上の気になる点（原因かは未確定）**: アプリが HAL に存在しない vendor タグ（`af_lock`, `lcd_light`, `is_auto_hdr`, `super_night_frame_done`, `HDRVideoMode`）を参照している。gralloc が不正な dataspace（134217986 = `0x08000102`）の警告を大量に出している（Android 17 のフレームワークと Android 16 世代の vendor の組合せ）。
 - **結論と次の一手**: vendor 側のファイル差し替え型の修正（GPS 修正と同じ方式）では直らない見込み。次は CamX のデバッグログを有効にした状態で写真を1枚撮影し、ISP オフライン再処理で AWB ゲインが失われる箇所を特定する。
 - **注意**: 撮影した写真・動画・logcat は個人情報を含むため `logs/` に置き、`.gitignore` で除外している（画像・動画・APK の拡張子も除外）。
+
+## マイルストーン8: 白い対象での切り分けと rawhdr 差分の検証（未解決） (2026-10-21)
+- **白い対象（ティッシュを被せたインカメラ）での測定**:
+  - プレビュー（スクリーンショット）の中央部は R200 / G200 / B194 でほぼ中立。
+  - 保存された写真の中央部は R98 / G136 / B2。青がほぼ消えており（青チャンネルが潰れている）、単に AWB ゲイン（B≒3.3）が未適用なだけでは説明できない。
+  - フェースビューティー（`PRETTYCAMERA`）モードでも同じ RAW / YUV の AI 補正が走り、経路は変わらない。インカメは「プロ」モードに存在しない。
+- **CamX デバッグログ（`camxoverridesettings.txt` を一時的に bind mount して `chiLogInfoMask` などを `0xFFFFFFFF` に）**:
+  - オフライン再処理は IPE のみで、`IPEWB` は有効。入力フレームの AWB は R≒1.43 / G=1.0 / B≒3.31 と出ている。
+  - 「ここで落ちている」と断定できる行は見つからなかった。`AWBR` の 1.0 ゲイン出力や `Failed to get AWBFrameControlTag` は、プレビュー起動時にも出る通常動作。
+- **`com.qti.feature2.rawhdr.so` の4バイト差は B18/B20 のビルド差**:
+  - 端末（B18）は `mov w12, #0`、ストック（B20）は `ldr w12, [x28]`（オフセット 0x26324）。
+  - ストックの命令に戻して bind mount すると、前面カメラのシャッターで `vendor.qti.camera.provider-service_64` が `ChiFeature2RawHDR::OnPopulateConfigurationSettings` 内で SIGSEGV（null 参照）。`com.qti.chi.override.so`（こちらも152バイト差）と対で変わる変更であり、片方だけ戻すと整合しない。
+  - この検証で「白く撮れた」ように見えた画像は、実際には 182x243 のサムネイルと背面カメラの暗い画像だった（前面の本画像は保存されていない）。
+  - テスト用の mount は解除し、provider も再起動して元に戻し済み。
+- **`dsp_a` の比較**: 端末とストック B20 でサイズ同一、4KB ブロックが 15 個（全体の約0.08%）異なるのみ。先頭付近のメタデータとみられ、ファームウェア版差の根拠にはならない。
+- **調査用の注意点（再現時）**: `adb shell su -c 'a && b'` は `su` が最初のコマンドにしか効かない。`adb shell "su -c 'a; b'"` のように全体を引用する。`chcon` などの操作が拒否されるときは、この引用ミスを疑う。provider の再起動は `stop`/`start` が効かないため、`kill $(pidof vendor.qti.camera.provider-service_64)` で行う（init が再起動する）。
+- **次の切り分け**: 写真の経路のうち、YUV 側の AI 補正（`yuv_udc` / `udc_512_512_12Binary.bin`）を一時的に無効化して撮影し、青の潰れが消えるかを確認する。
