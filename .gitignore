@@ -13,3 +13,12 @@ archive/
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Test photos / videos / camera logs (personal data, never commit)
+*.jpg
+*.jpeg
+*.heic
+*.png
+*.mp4
+*.apk
+logcat*.txt

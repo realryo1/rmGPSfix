@@ -94,3 +94,23 @@
 - **README の整備**: 検証環境（KernelSU のみ検証済み）、ROM イメージを含まないことによる再現手順、ライセンスの注記を日英両方に追記。Magisk / APatch の記述は未検証のため削除。
 - **誤字修正**: 本ファイル内の「备份」を「バックアップ」に修正。
 - **据え置き**: コミット作者のメールアドレスは変更せず保持。リモートはユーザーが設定予定。
+
+## マイルストーン7: インカメラ写真の緑被り調査（未解決） (2026-10-20〜21)
+- **症状**: 標準カメラ（`com.android.camera` / NubiaCamera）のインカメラ（画面下カメラ `ov16a1q`、内部カメラID 3）で撮影した写真だけが、緑（黄緑）がかって保存される。
+- **実測（`scripts/measure_color.py`）**:
+  - 写真: R/B ≒ 2.5〜2.8、G/B ≒ 3.1〜3.5（青が極端に不足）。美顔 ON/OFF のどちらでも同じ。
+  - 動画のフレーム: R/B ≒ 1.08、G/B ≒ 1.03（ほぼ中立）。動画は正常。
+  - 写真の青不足の比率は、ログ上の AWB ゲイン（R≒1.5 / G=1.0 / B≒3.3）の比とほぼ一致する。写真の経路で AWB ゲインが反映されていない可能性が高い。
+- **写真の経路**: RAW 4コマ（4608x3456）を RAW 領域の AI 補正（`CAiCud` / `libin_display.so` の `In_display_process_raw`、AWB ゲインとレンズシェーディングマップを入力に取る）→ ISP オフライン再処理 → YUV 領域の AI 補正（`yuv_udc` / QNN `udc_512_512_12`）→ JPEG。動画はこれらを通らない。どちらの AI 補正もエラーなく完走している。
+- **原因ではないと確認したもの（ストック B20 の `vendor_a` を `fsck.erofs`（erofs-utils 1.9.1、WSL）で展開して SHA-256 比較）**:
+  - `vendor/lib64/camera/` のセンサー・チューニング・EEPROM・センサーモジュール、`vendor/etc/camera/` の UDC 系 AI モデル（`udc_512_512_12Binary.bin` 他）は全て一致。
+  - QNN/HTP ライブラリ、`libin_display.so`、`libmfnr_network.so`、`libUDCInterface.so` は一致。
+  - `camera.qcom.core.so`、`com.qti.chi.override.so`、`libcom.nubia.chinodenubiautils.so`、`com.qti.stats.{aec,af}.so` はサイズ同一で、文字列差分はビルド時の行番号のみ（同一コードの再ビルド）。
+  - `camera.ko` の差分は OIS 関連のみ。
+  - 端末の標準カメラは `11.0.011-redmagic.2603040916`（ストックは `2604031853`）で、vendor（2026-03-20）と同世代であり整合している。署名がストックと異なるため上書きインストールは不可。
+  - アプリの `color_compensation` は `getColorCompensation()` が常に 0 を返す未使用項目。
+  - `persist` 側の UDC 向けキャリブレーションデータは存在しない（`dualcam_cali.bin` のみ）。
+- **第三者アプリでの切り分けは不可**: インカメラ（ID 3）はシステムカメラ扱いで、`SYSTEM_CAMERA` ロールを持たないアプリ（Open Camera 等）には公開されない。`persist.vendor.camera.privapp.list` への追加でも公開されなかった（変更は元に戻し済み）。
+- **その他のログ上の気になる点（原因かは未確定）**: アプリが HAL に存在しない vendor タグ（`af_lock`, `lcd_light`, `is_auto_hdr`, `super_night_frame_done`, `HDRVideoMode`）を参照している。gralloc が不正な dataspace（134217986 = `0x08000102`）の警告を大量に出している（Android 17 のフレームワークと Android 16 世代の vendor の組合せ）。
+- **結論と次の一手**: vendor 側のファイル差し替え型の修正（GPS 修正と同じ方式）では直らない見込み。次は CamX のデバッグログを有効にした状態で写真を1枚撮影し、ISP オフライン再処理で AWB ゲインが失われる箇所を特定する。
+- **注意**: 撮影した写真・動画・logcat は個人情報を含むため `logs/` に置き、`.gitignore` で除外している（画像・動画・APK の拡張子も除外）。

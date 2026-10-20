@@ -84,6 +84,16 @@ Please extract these from your own device. `build_ksu_module.py` does not need a
 
 ---
 
+## Known Issue: Greenish Front-Camera Photos (Under Investigation, Not Fixed)
+
+Photos taken with the stock camera app's under-display front camera are saved with a green tint. This is **not fixed yet**; this module does not contain a fix for it.
+
+- Video is fine; only photos lose blue (the AWB gains are most likely not applied in the photo pipeline).
+- Sensor tuning, AI models, QNN libraries and the camera HAL match the stock ROM, so replacing vendor files is unlikely to help.
+- See milestone 7 in [`sagyou.md`](./sagyou.md) (Japanese) for details.
+
+---
+
 ## License
 
 - The scripts, documentation, and module scripts in this repository are released under the [MIT License](./LICENSE).
