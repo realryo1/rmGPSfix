@@ -33,6 +33,10 @@ The fix zeroes the low 32 bits of `GetNZSLSnapshotFlag` in `com.qti.feature2.gs.
 
 On a checked photo, a blue plush eye was about RGB [36, 78, 120] and white fabric about [182, 183, 174]. A broken white subject was about [90, 115, 20].
 
+Fine detail is softer than a full Quad CFA readout. The sensor is Quad Bayer, so its optical resolution is about 4MP. The difference from a full readout was not measured against the stock ROM.
+
+The patched function is the shared graph selector, not a front-camera-only path. Ordinary rear photos do not use this non-ZSL path, so they stay as they are. A rear high-resolution mode that uses the same flag would also fall back to the 4MP path. That mode was not rechecked after the patch.
+
 ## Not in this module
 
 - The bottom-left thumbnail opens Glimpse (`org.lineageos.glimpse`) directly. Clearing the default image app does not switch it to Google Photos.
