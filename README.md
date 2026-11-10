@@ -15,7 +15,7 @@ EvolutionX（2026-10-10）で、GPS が測位しない問題と、インカメ�
 1. 以前の `rm11pro_gps_fix` と、試験用の `rm11pro_frontcam_wb` が入っていれば外す。id が `gps_incamera_fix` に変わるので、自動では置き換わりません。
 2. KernelSU で [`gps_incamera_fix_v2.0.zip`](./gps_incamera_fix_v2.0.zip) を入れ、再起動する。
 3. **設定 → 位置情報 → 位置情報サービス → Google 位置情報の精度** を ON にする。
-4. 屋外で測位を確認する。インカメラの写真は、白いものが緑に潰れず、青が残る。
+4. 屋外で測位を確認する。インカメラの写真は、白いものが緑がからないことを確認する。
 
 `scripts/build_ksu_module.py` が `module/` からこの ZIP を作ります。
 
