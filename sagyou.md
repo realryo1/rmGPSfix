@@ -137,3 +137,15 @@
 - **結果**: ログは `Create From Binary failure` となり、保存された写真は真っ黒（R=G=B=0）。クラッシュはしない。このステージは失敗時に元画像へ素通しされず、出力そのものを作るため、「飛ばして色を確認する」切り分けはできない。
 - テスト用の mount は解除し、provider を再起動して元に戻し済み（キャッシュは元のサイズ 124,338,176 バイトに復帰）。
 - **現時点の見立て**: vendor 側のファイル差し替え型の修正では直らない見込み。残る可能性は、(1) RAW 側の AI 補正（`libin_display.so`）が青を潰している、(2) Android 17 のフレームワークと B18 vendor の組み合わせによる不整合（ROM 側の問題）。次の手は、ROM 側への報告、または CamX のバッファダンプによる各ステージ出力の確認。
+
+## マイルストーン10: 各段ダンプによる原因箇所の特定と引き継ぎ（未解決） (2026-11-10)
+- **手法**: `camxoverridesettings.txt` を一時的に bind mount して CamX の画像ダンプ (`autoImageDump`) と verbose ログを有効化し、写真 1 枚の各段の出力を実測。撮影はキーイベントで自動化 (`scripts/camdebug/`)。
+- **判明したこと**:
+  - 写真の経路は `RealTimeFeatureNZSLSnapshotRDI0`（センサー mode 0、4608x3456、Quad CFA 扱いの非 ZSL 撮影）→ `SWMFMergeRawCudProcess0`（RAW の AI 補正）→ `ZSLSnapshotYUVHAL0`（OFE → IPE）→ `InternalZSLExtendYuv2Jpeg0`。
+  - 緑になるのは OFE → IPE の現像段。白い対象で OFE 出力が U=115 / V=123（プレビューとアウトカメラは U≒126 / V≒128）。
+  - 直接原因は「写真の経路で WB がどこでも掛かっていない」こと。IPE の WB モジュールは写真では設計上無効（アウトカメラも同じ）で、WB は OFE が掛ける。インカメラの写真では OFE が WB を掛けていない。
+  - 写真用センサーモードの RAW の黒レベルは約 518（プレビューは 64）。AI ノードには 64 が渡っている。
+  - EvolutionX は `com.qti.feature2.rawhdr.so` と `com.qti.chi.override.so` にバイナリパッチを当てている（BuildId が同じで中身が違う）。`rawhdr.so` のパッチが塞いでいるクラッシュは、instanceId 256（NZSL + swremosaic）を配列添字に使うことで起きる。ストックのコードはインカメラがこの経路を通る想定になっていない可能性が高い。
+- **試して効果が無かったもの**: `rawhdr.so` の添字を 1 に変更、IPE の WB15 の強制有効化（真っ黒になる）、AI 設定 XML の黒レベル変更、`exposeFullSizeForQCFA=FALSE`、`AECGainThresholdForQCFA=1`、写真の比率を 16:9 に変更。
+- **端末の状態**: 実験用の bind mount・一時ファイル・ダンプはすべて除去済み。`/vendor` への書き込みは無し。
+- **引き継ぎ**: 事実・数値・アドレス・次の一手は [`frontcam_handoff.md`](./frontcam_handoff.md) にまとめた。
