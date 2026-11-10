@@ -22,3 +22,4 @@ __pycache__/
 *.mp4
 *.apk
 logcat*.txt
+mikusplash/
