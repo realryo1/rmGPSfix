@@ -1,6 +1,6 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
-LOG=/data/local/tmp/rm11pro_gps_fix.log
+LOG=/data/local/tmp/gps_incamera_fix.log
 echo "service.sh start $(date)" >> "$LOG"
 
 # Ensure bind mount is active
@@ -11,4 +11,5 @@ if ! grep -q "PROCESS_STATE=DISABLED" /vendor/etc/izat.conf 2>/dev/null; then
     mount -o bind "$MODDIR/izat.conf" /vendor/etc/izat.conf >>"$LOG" 2>&1
 fi
 
-echo "service.sh done $(date)" >> "$LOG"
+echo "service.sh gps done $(date)" >> "$LOG"
+sh "$MODDIR/apply.sh"

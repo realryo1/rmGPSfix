@@ -1,12 +1,17 @@
-# インカメラ写真の緑被り: 調査の引き継ぎメモ (2026-11-10 時点・未解決)
+# インカメラ写真の緑被り: 調査記録
 
-RedMagic 11 Pro (NX809J) + EvolutionX A17 (2026-10-10 ビルド) で、標準カメラ (`com.android.camera` / NubiaCamera) の
-インカメラ (画面下カメラ `ov16a1q`、HAL カメラ ID 3、論理カメラ `cam1`) の **写真だけ** が緑がかる問題の調査記録。
-ここまでで原因箇所はかなり絞れているが、修正は未完成。次に作業する人 (または別の AI) がここから再開できるように書く。
+**状態（2026-11-11）:** 色は修正済み。KernelSU モジュール `gps_incamera_fix` v2.0 が、2026-10-10 ビルドの `com.qti.feature2.gs.sm8850.so` で `GetNZSLSnapshotFlag` の nzsl flags を 0 にする（6 章 B）。写真は 2304×1728 で現像してから 4608×3456 に拡大する。OFE に WB を掛けさせる案（6 章 C）と、ストック ROM での計測（6 章 A）は未実施。
 
-- 経緯の詳細は [`sagyou.md`](./sagyou.md) のマイルストーン 7〜10。
+モジュールに入っていないもの:
+
+- 左下サムネイルは `CameraUtil.viewUri` が `org.lineageos.glimpse` を直接開く。画像の既定アプリを消しても Google フォトにはならない。
+- 「撮影中、デバイスをしっかり握ってください」（`show_night_capture_text`）は画面下インカメの撮影中表示。出ている間は JPEG がまだ無く、消えてから左下を開くと写真が見える。
+
+以下は調査時の記録。RedMagic 11 Pro (NX809J) + EvolutionX A17（2026-10-10）で、標準カメラのインカメラ（画面下 `ov16a1q`、HAL ID 3、論理カメラ `cam1`）の写真だけが緑になる問題。
+
+- 経緯は [`sagyou.md`](./sagyou.md) のマイルストーン 7 以降。
 - 調査ツールは [`scripts/camdebug/`](./scripts/camdebug/)。
-- 取得したログ・写真・ダンプは `logs/` (gitignore 済み)。**個人情報を含むのでコミットしない**。
+- ログと写真は `logs/`（gitignore）。個人情報を含むのでコミットしない。
 
 ---
 
@@ -96,8 +101,11 @@ BuildId が同じなのに中身が違うファイル = 再ビルドではなく
 ストックに一時的に戻せるなら、同じ手順 (7 章) で `REQMAP` のパイプライン名、`[XCFA]` のログ、ダンプの各段の値を取る。
 見るべき点: 写真が NZSL (`RealTimeFeatureNZSLSnapshotRDI0`) を通るか、`SWRemosaic` を通るか、AI ノードに渡る black_level、OFE 出力の U/V。
 
-### B. インカメラの写真を NZSL (Quad CFA) に入れない
-アウトカメラと同じ「ZSL フレーム → AI → OFE」に流せば、OFE の WB が効く見込み。
+### B. インカメラの写真を NZSL (Quad CFA) に入れない（採用、v2.0 に同梱）
+アウトカメラと同じ「ZSL フレーム → AI → OFE」に流せば、OFE の WB が効く見込み。2026-11-10 に実機で確認し、モジュールへ入れた。
+
+採用したパッチは `GetNZSLSnapshotFlag` 内、ファイルオフセット 0xd4e26（`mov w11, w23` の `17` → `1f`、`mov w11, wzr`）。戻り値の下位 32bit だけを 0 にする。結果は `RealTimeFeatureNZSLSnapshotRDI0` に入らず、2304×1728 を 4608×3456 に拡大する。ぬいぐるみの青い目は RGB 約 [36, 78, 120]、白い生地は約 [182, 183, 174]。
+
 - 判定は `/vendor/lib64/com.qti.feature2.gs.sm8850.so` (ストックと同一) の `GetNZSLSnapshotFlag`。
   ログ文字列 `[XCFA] isHighResStrmFound: %d, nzsl flags: 0x%x, isQCFASnapshot: %d, isB2YBinningSnapshot: %d, isMCX: %d` の参照が vaddr 0xd4514 にある。
   関数本体はおおよそ 0xd41a0〜0xd4530。実機では `isHighResStrmFound: 1, nzsl flags: 0x3, isQCFASnapshot: 1, isB2YBinningSnapshot: 0, isMCX: 1`。

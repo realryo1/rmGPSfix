@@ -1,6 +1,6 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
-LOG=/data/local/tmp/rm11pro_gps_fix.log
+LOG=/data/local/tmp/gps_incamera_fix.log
 echo "post-fs-data start $(date)" > "$LOG"
 
 chown root:root "$MODDIR/izat.conf"
@@ -24,4 +24,6 @@ if [ ! -f "$MODDIR/.xtra_reset_done" ]; then
     touch "$MODDIR/.xtra_reset_done"
 fi
 
-echo "post-fs-data done $(date)" >> "$LOG"
+echo "post-fs-data gps done $(date)" >> "$LOG"
+: > /data/local/tmp/gps_incamera_fix_frontcam.log
+sh "$MODDIR/apply.sh"

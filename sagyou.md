@@ -149,3 +149,37 @@
 - **試して効果が無かったもの**: `rawhdr.so` の添字を 1 に変更、IPE の WB15 の強制有効化（真っ黒になる）、AI 設定 XML の黒レベル変更、`exposeFullSizeForQCFA=FALSE`、`AECGainThresholdForQCFA=1`、写真の比率を 16:9 に変更。
 - **端末の状態**: 実験用の bind mount・一時ファイル・ダンプはすべて除去済み。`/vendor` への書き込みは無し。
 - **引き継ぎ**: 事実・数値・アドレス・次の一手は [`frontcam_handoff.md`](./frontcam_handoff.md) にまとめた。
+
+## マイルストーン11: NZSL フラグを 0 にした写真の色（ぬいぐるみの目で確認） (2026-11-10)
+- **パッチ**: `com.qti.feature2.gs.sm8850.so` の `ChiFeature2GraphSelector::GetNZSLSnapshotFlag`（vaddr `0xd4e24`）の `mov w11, w23` を `mov w11, wzr` に変更。戻り値の下位 32bit（nzsl flags）だけを 0 にする。呼び出し元 `SelectFeatureGraphforRequestFromTable` はここを `[sp+0x8c]` に保存してグラフ選択フラグへ混ぜる。bind mount のみで、`/vendor` には書いていない。
+- **ぬいぐるみの目** (`IMG_20261110_230643.jpg`、4608x3456):
+  - 青い目の画素平均 RGB ≒ [36, 78, 120]。青が最大で、緑被りの潰れ方ではない。
+  - 白い生地の画素平均 RGB ≒ [182, 183, 174]。壊れていた白い対象（RGB ≒ [90, 115, 20]）とは違う。
+- **経路**: `RealTimeFeatureNZSLSnapshotRDI0` には入らない。AI (`CAiCud`) の入力は 2304x1728、`black_level` は 64。`ZSLSnapshotYUVHAL0` は入力 2304x1728 を出力 4608x3456 に拡大する（`postScaleRatio=0.5`）。写真用 IPE の `IPEWB` は従来どおり `en 0`。色が直ったのは、WB の掛かるビンニング側へ寄ったため。保存ファイルの画素数は 16MP のままで、中身は 4MP からの拡大。
+- **ログ用の `camxoverridesettings.txt` は検証後に外す。** 色のパッチは再起動するまで bind mount のまま。
+- **手動確認**: ユーザーがぬいぐるみの目で色の修正を確認した。
+
+## マイルストーン12: 撮影直後の左下プレビューが真っ黒 (2026-11-10)
+- **症状**: インカメラで撮ってすぐ左下サムネイルを開くと、日付だけで画面が真っ黒。アウトカメラはすぐ開いても真っ黒にならない。完成した JPEG 自体は真っ黒ではない。
+- **実測**（色パッチ適用中、`IMG_20261110_231739.jpg`）: シャッターからファイル出現まで約 2.9 秒。内訳は RAW AI（`CAiCud`）がモデル初期化込みで約 0.4 秒、YUV の画面下補正 `yuv_udc` が初期化 566ms + 推論 598ms。処理の途中（約 1 秒時点）でアプリが `notifyProcessingUri` を出し、中身の無いメディア項目を先に作る。そこを開くと日付だけ見える。
+- **サムネイル用タグ**: `com.zte.node.capturepostprocess.so` などが `ThumbnailSnapshot` を読めず `Get vendor tag Thumbnail snapshot failed`。失敗しても処理は続行する。先に小さなプレビューを渡す経路が、このグラフでは動いていない。
+
+## マイルストーン13: 色修正の KernelSU モジュール (2026-11-10)
+- **super.img の APK**: カメラは `/product/priv-app/NubiaCamera/NubiaCamera.apk`。product は super.img の中なので、同じ署名かつより大きい versionCode の APK を入れて super.img だけ焼き直せば、起動時のパッケージ走査で置き換わる。署名が違うと置き換わらない。versionCode が同じだと更新扱いにならないことがある。
+- **モジュール**: 緑被りの回避（`GetNZSLSnapshotFlag` の `mov w11, w23` → `mov w11, wzr`、ファイルオフセット 0xd4e26 の `17` → `1f`）。起動時に端末上の so を複製してその 1 バイトだけ変え、bind mount する。サイズ 1545632 かつ命令 `eb 03 17 2a` のときだけ当てる。適用後の命令は `eb 03 1f 2a`。単独モジュール `rm11pro_frontcam_wb` で実機確認したあと、マイルストーン16 で GPS モジュール v2.0 に移した。
+- **APK のくるくる表示はモジュールに入れていない。** 左下サムネイルのビットマップはアプリのプロセス内だけで、別署名の APK を被せるとシステムアプリとして載らない。
+
+## マイルストーン14: サムネイルの開き先は既定アプリではない (2026-11-10)
+- 画像の VIEW に既定アプリは無く、選ぶ画面になる。システムギャラリーのロールは `org.lineageos.glimpse`。
+- 左下タップ `ThumbnailOnClickListener.goToGalley` は `CameraUtil.viewUri` / `viewUriInPhotos` を呼び、どちらも `setPackage("org.lineageos.glimpse")` で Glimpse の `ViewActivity` を直接開く。実測でも 23:51 以降のタップはすべて Glimpse。
+- `checkIfUseGooglePhotosAsGallery` は framework の `config_systemGallery` が `com.google.android.apps.photos` を含むときだけ真。サムネイルの経路はこれを見ずにパッケージを固定している。既定アプリを消しても Google フォトにはならない。
+
+## マイルストーン15: 「しっかり握ってください」が消えてから開くと見える (2026-11-10)
+- 文言は `show_night_capture_text`（「撮影中、デバイスをしっかり握ってください」）。画面下インカメの撮影で `NormalMemberFragment.onUnderScreenStart` が出して、`onUnderScreenStop` で消す。
+- この表示が残っている間は JPEG がまだ無い。消えてから左下を開くと、中身の無い処理中項目ではなく完成した写真になる。アウトカメラはこの画面下撮影に入らないので、すぐ開いても真っ黒にならない。
+
+## マイルストーン16: GPS と緑被りを v2.0 の1パッケージに (2026-11-11)
+- モジュール id は `gps_incamera_fix`、`version=v2.0` / `versionCode=2`。配布 ZIP は `gps_incamera_fix_v2.0.zip`。旧 id `rm11pro_gps_fix` とは別モジュールになる。
+- `module/apply.sh` が緑被りの 1 バイトパッチを担当し、`post-fs-data.sh` と `service.sh` から呼ぶ。マウント確認は `gps_incamera_fix`。違うビルドの so は素通り。
+- 試験導入した `rm11pro_frontcam_wb` は外す。同じパッチが v2.0 に入っている。
+- Glimpse を直接開く件と、「しっかり握ってください」が消えるまで待つ件は、モジュールでは直していない。
