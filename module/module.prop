@@ -1,6 +1,6 @@
-id=gps_incamera_fix
-name=gps_incamera_fix
-version=v2.0
-versionCode=2
+id=gps_incamera_audio_fix
+name=gps_incamera_audio_fix
+version=v3.0
+versionCode=3
 author=realryo1
-description=GPS（xtra-daemon の二重起動）とインカメラ写真の緑被りを直す。緑被りのパッチは EvolutionX 2026-10-10 の gs.sm8850.so だけに当たり、別ビルドは素通りする。
+description=GPS（xtra-daemon の二重起動）、インカメラ写真の緑被り、音声の低遅延出力（raw_out）の欠落を直す。緑被りのパッチは EvolutionX 2026-10-10 の gs.sm8850.so だけに当たり、別ビルドは素通りする。

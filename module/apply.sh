@@ -2,7 +2,7 @@
 # GetNZSLSnapshotFlag の戻り値下位 32bit (nzsl flags) を 0 にする。
 # 2026-10-10 ビルドの命令 eb 03 17 2a だけを eb 03 1f 2a に変える。
 MODDIR=${0%/*}
-LOG=/data/local/tmp/gps_incamera_fix_frontcam.log
+LOG=/data/local/tmp/gps_incamera_audio_fix_frontcam.log
 SO=/vendor/lib64/com.qti.feature2.gs.sm8850.so
 OUT="$MODDIR/gs.sm8850.so"
 EXPECT_SIZE=1545632
@@ -15,7 +15,7 @@ sig_of() {
     dd if="$1" bs=1 skip="$INSN_OFF" count=4 2>/dev/null | od -An -tx1 | tr -d '[:space:]'
 }
 
-if grep "sm8850.so" /proc/self/mountinfo 2>/dev/null | grep -q "gps_incamera_fix"; then
+if grep "sm8850.so" /proc/self/mountinfo 2>/dev/null | grep -q "/${MODDIR##*/}/"; then
     log "already bind-mounted"
     exit 0
 fi

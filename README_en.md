@@ -2,7 +2,7 @@
 
 [日本語 (README.md)](./README.md)
 
-A KernelSU module that fixes non-working GPS and green-tinted front-camera photos on EvolutionX (2026-10-10). One download: [`gps_incamera_fix_v2.0.zip`](./gps_incamera_fix_v2.0.zip).
+A KernelSU module that fixes non-working GPS, green-tinted front-camera photos, and late game audio (a missing low-latency output) on EvolutionX (2026-10-10). One download: [`gps_incamera_audio_fix_v3.0.zip`](./gps_incamera_audio_fix_v3.0.zip).
 
 | Item | Details |
 |---|---|
@@ -12,10 +12,11 @@ A KernelSU module that fixes non-working GPS and green-tinted front-camera photo
 
 ## Install
 
-1. Remove `rm11pro_gps_fix` and the test module `rm11pro_frontcam_wb` if they are installed. The id is now `gps_incamera_fix`, so they are not replaced automatically.
-2. Flash [`gps_incamera_fix_v2.0.zip`](./gps_incamera_fix_v2.0.zip) in KernelSU and reboot.
+1. Remove `gps_incamera_fix` (v2.0), `rhythm_latency_fix`, `rm11pro_gps_fix` and the test module `rm11pro_frontcam_wb` if they are installed. The id is now `gps_incamera_audio_fix`, so they are not replaced automatically.
+2. Flash [`gps_incamera_audio_fix_v3.0.zip`](./gps_incamera_audio_fix_v3.0.zip) in KernelSU and reboot.
 3. Turn **Settings → Location → Location services → Google Location Accuracy** ON.
 4. Check a fix outdoors. A white subject in a front-camera photo should keep its blue instead of turning green.
+5. For rhythm games, open rmcontrol (the RedMagic settings app), turn **Extra loudness off** and set **Touch sampling while gaming to 720 Hz** (see “Audio” below).
 
 `scripts/build_ksu_module.py` builds the ZIP from `module/`.
 
@@ -42,13 +43,37 @@ The patched function is the shared graph selector, not a front-camera-only path.
 - The bottom-left thumbnail opens Glimpse (`org.lineageos.glimpse`) directly. Clearing the default image app does not switch it to Google Photos.
 - While “Hold the device firmly while shooting” is on screen, the under-display capture is still running and the JPEG does not exist yet. Open the thumbnail after that message goes away. The rear camera does not show it, so an immediate open is fine.
 
-Measurements and rejected ideas are in [`sagyou.md`](./sagyou.md) and [`frontcam_handoff.md`](./frontcam_handoff.md) (Japanese).
+Measurements and rejected ideas are in [`docs/sagyou.md`](./docs/sagyou.md) and [`docs/frontcam_handoff.md`](./docs/frontcam_handoff.md) (Japanese).
+
+## Audio (rhythm-game latency)
+
+The ROM's audio HAL config `/vendor/etc/audio/sku_canoe/audio_module_config_primary.xml` has no `raw_out` (FAST|RAW) output. An app that asks for FAST|RAW lands on the slower `low_latency_out`. The stock ROM config lacks it too. The module bind-mounts a config with `raw_out` added for the speaker, wired headset and USB audio routes.
+
+Tap-to-sound in Project SEKAI (song “ray”), measured with a PC microphone:
+
+| State | Tap → SE (median) |
+|---|---|
+| ROM default (Extra loudness on) | about 180 ms (estimated from OS-reported latency) |
+| Extra loudness off | 79 ms |
+| plus `raw_out` (this module) | 66 ms |
+| same, 3.5 mm wired earphones | 31 ms |
+| reference: iPad mini (A17 Pro) speaker | 43 ms |
+
+Settings to change yourself (the module does not touch them):
+- **Extra loudness** (rmcontrol): when on, it adds loudness processing to the speaker and disables the low-latency output for every app. Turn it off.
+- **Touch sampling while gaming** (rmcontrol): 720 Hz raises touch reports from about 180 Hz to 363 Hz (measured).
+
+The built-in speakers keep about 35 ms of delay that the OS does not report. It comes from processing the audio DSP adds only for the speaker; the amp profile and speaker protection made no difference. The earpiece and wired paths do not have it, so 3.5 mm wired earphones are the fastest way to play.
+
+Procedures and results are in [`docs/audio/progress.md`](./docs/audio/progress.md) (Japanese).
 
 ## Layout
 
 - `module/` — the module
 - `scripts/` — `super.img` diffs and camera measurements. ROM images are not in this repository
+- `scripts/audio/` — audio and touch latency measurement scripts. Recordings and other measurement data are not included
+- `docs/` — work logs (Japanese): `sagyou.md` and `frontcam_handoff.md` for GPS and camera, `audio/` for audio
 
 ## License
 
-Scripts and docs are under the [MIT License](./LICENSE). `module/izat.conf` is a modified EvolutionX / Qualcomm config.
+Scripts and docs are under the [MIT License](./LICENSE). `module/izat.conf`, `module/audio_module_config_primary.xml` and the configs in `docs/audio/experiments/` are modified EvolutionX / Qualcomm configs.

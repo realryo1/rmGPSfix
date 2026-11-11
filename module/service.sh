@@ -1,6 +1,6 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
-LOG=/data/local/tmp/gps_incamera_fix.log
+LOG=/data/local/tmp/gps_incamera_audio_fix.log
 echo "service.sh start $(date)" >> "$LOG"
 
 # Ensure bind mount is active

@@ -12,9 +12,10 @@ NAMES = [
     "uninstall.sh",
     "apply.sh",
     "izat.conf",
+    "audio_module_config_primary.xml",
 ]
 
-zip_path = ROOT / "gps_incamera_fix_v2.0.zip"
+zip_path = ROOT / "gps_incamera_audio_fix_v3.0.zip"
 with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
     for name in NAMES:
         path = MOD / name

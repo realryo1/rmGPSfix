@@ -10,7 +10,7 @@
 以下は調査時の記録。RedMagic 11 Pro (NX809J) + EvolutionX A17（2026-10-10）で、標準カメラのインカメラ（画面下 `ov16a1q`、HAL ID 3、論理カメラ `cam1`）の写真だけが緑になる問題。
 
 - 経緯は [`sagyou.md`](./sagyou.md) のマイルストーン 7 以降。
-- 調査ツールは [`scripts/camdebug/`](./scripts/camdebug/)。
+- 調査ツールは [`scripts/camdebug/`](../scripts/camdebug/)。
 - ログと写真は `logs/`（gitignore）。個人情報を含むのでコミットしない。
 
 ---
