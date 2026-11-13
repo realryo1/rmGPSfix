@@ -42,6 +42,7 @@ The patched function is the shared graph selector, not a front-camera-only path.
 
 - The bottom-left thumbnail opens Glimpse (`org.lineageos.glimpse`) directly. Clearing the default image app does not switch it to Google Photos.
 - While “Hold the device firmly while shooting” is on screen, the under-display capture is still running and the JPEG does not exist yet. Open the thumbnail after that message goes away. The rear camera does not show it, so an immediate open is fine.
+- If rmcontrol's Quick Settings tiles (such as the fan) react late or ignore repeated taps, count your custom tiles (tiles from other apps). SystemUI binds at most 3 custom tiles at a time; with 4 or more, a tap can wait up to about 5 s after you open the shade, and taps made meanwhile collapse into one. Keep 3 or fewer custom tiles. If a tile comes from your own app, declaring it as an `ACTIVE_TILE` keeps it out of that limit. Details: milestone 17 in [`docs/sagyou.md`](./docs/sagyou.md).
 
 Measurements and rejected ideas are in [`docs/sagyou.md`](./docs/sagyou.md) and [`docs/frontcam_handoff.md`](./docs/frontcam_handoff.md) (Japanese).
 

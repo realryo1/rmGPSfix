@@ -7,6 +7,7 @@ RedMagic 11 Pro（NX809J）の EvolutionX A17（2026-10-10、MinimalGApps）で�
 - **GPS:** 修正済み。`xtra-daemon` の二重起動を止め、上限で止まった `xtra.sqlite` を初回だけ作り直す。
 - **インカメラ写真の緑被り:** 修正済み。非 ZSL を避け、2304×1728 で現像して 4608×3456 に拡大する。細かい模様はフル読み出しより柔らかい。パッチは全カメラ共通で、アウトカメラの高解像度モードは未確認。
 - **未修正:** 左下サムネイルは Glimpse を直接開く。「撮影中、デバイスをしっかり握ってください」が出ている間は JPEG がまだ無い。
+- **クイック設定のファンタイルの反応が悪い:** rmcontrol の不具合ではなく、SystemUI がカスタムタイルを同時に 3 つまでしかバインドしないため。カスタムタイルを減らすか、自作アプリのタイルを ACTIVE_TILE にすれば直る（マイルストーン17）。
 - **未実施:** ストック ROM での同じ計測。Quad CFA の経路のまま OFE にホワイトバランスを掛ける案。
 
 `./1_stock20images` はストック ROM、`./EvolutionX-NX809J-A17-20261010-MinimalGApps` は対象のカスタム ROM。差分検証に使う。
@@ -34,6 +35,10 @@ GPS
 14. サムネイルは Glimpse を直接開く
 15. 「しっかり握ってください」が消えてから開くと見える
 16. GPS と緑被りを `gps_incamera_fix` v2.0 にまとめる
+
+クイック設定
+
+17. ファンタイルの反応が悪い（カスタムタイルのバインド枠）
 
 ## ルール
 ・日本語で返答
@@ -214,3 +219,20 @@ GPS
 - `module/apply.sh` が緑被りの 1 バイトパッチを担当し、`post-fs-data.sh` と `service.sh` から呼ぶ。マウント確認は `gps_incamera_fix`。違うビルドの so は素通り。
 - 試験導入した `rm11pro_frontcam_wb` は外す。同じパッチが v2.0 に入っている。
 - Glimpse を直接開く件と、「しっかり握ってください」が消えるまで待つ件は、モジュールでは直していない。
+
+## マイルストーン17: ファンタイルの反応が悪い（カスタムタイルのバインド枠） (2026-11-13)
+- **症状**: rmcontrol（`com.nubia.rmcontrol`）のクイック設定タイル「Cooling Fan」で速度を変えると、数秒遅れる、連打しても 1 段しか進まない、反応にムラがある。
+- **タイルからファンまでの経路**: `FanTile`（`LevelTile` の派生）は Auto → 1〜5 → Off → Auto の順に回し、`persist.sys.rm.fan_auto` と `persist.sys.fan.level` を `SystemProperties.set` で書く。`/odm/etc/init/redmagic_hw_arm.rc` の `on property:persist.sys.fan.level=N` が `/sys/kernel/fan/fan_enable` と `fan_speed_level` に書く。Auto 中は `hwcontrol`（温度連動）、ゲーム中は `gameperfd` が同じプロパティを書く。
+- **経路は正常**: タイルのサービスがバインドされている間は、0.25 秒間隔の 6 連打がすべて約 0.1 秒以内に sysfs まで届いた。
+- **原因は SystemUI のバインド枠**: SystemUI はカスタムタイル（他アプリの `TileService`）を同時に 3 つまでしかバインドしない。常時リスニングのカスタムタイルが 3 つを超えると、
+  - シェードを開いた直後の約 5 秒間は、先にバインドされた 3 つが枠を占める。その間に押したファンタイルのクリックは保留され、開いてから 5.0〜5.2 秒後の入れ替えで届く（3 回とも再現、遅れは約 3〜4 秒）。
+  - 保留中のクリックは 1 回にまとめられる。開いた直後の 4 連打は Off → Auto の 1 段だけ。
+  - 開いたままでも 5 秒ごとに枠が入れ替わり、ファンタイルは時間の約半分バインドされていない。
+  - 計測時のカスタムタイルは 6 つ（rmcontrol 3 つ、他アプリ 3 つ）。`dumpsys activity services` で `c:com.android.systemui` のタイルサービスは常に 3 つだった。
+- **対処**（モジュールでは直していない。rmcontrol と SystemUI はプラットフォーム署名のため差し替えられない）:
+  - 常時リスニングのカスタムタイルを 3 つ以下にする。
+  - 自作アプリのタイルなら、マニフェストで `android.service.quicksettings.ACTIVE_TILE` を宣言し、状態が変わったときに `TileService.requestListeningState()` で更新を頼む。ACTIVE_TILE はシェードを開いてもバインドを求めないので、枠を奪わない。
+- **確認**: 他アプリのタイルを ACTIVE_TILE にした後、開いた直後の 1 回押しは約 0.05 秒（2 回とも）、4 連打は 4 段すべて反映、開いたままの 25 秒間は rmcontrol の 3 タイルがバインドされたままで入れ替わりなし。
+- **rmcontrol 側の小さな問題**: タイル表示はシェードを開いたときと押したときにしか更新されない。Auto 中に `hwcontrol` が速度を変えても表示は古いまま。
+- **計測方法**: `cmd statusbar expand-settings` の後に `cmd statusbar click-tile com.nubia.rmcontrol/.FanTile` を送り、端末上のシェルで `getprop` と `/sys/kernel/fan/*`、バインド中のタイルサービスを 50〜100ms 間隔で記録した。シェードが閉じているときの `click-tile` は、開くまで届かない。
+- **端末の状態**: テスト後にファンを Off（`fan.level=0`、`fan_auto=0`）に戻し、`/data/local/tmp` の一時スクリプトは削除済み。
